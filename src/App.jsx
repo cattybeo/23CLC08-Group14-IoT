@@ -1,19 +1,27 @@
-import { useState } from "react";
+import { Toaster } from "@/components/ui/toaster.jsx";
+import { Toaster as Sonner } from "@/components/ui/sonner.jsx";
+import { TooltipProvider } from "@/components/ui/tooltip.jsx";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
-function App() {
-  const [count, setCount] = useState(0);
+const queryClient = new QueryClient();
 
-  const increment = () => {
-    setCount(count + 1);
-  };
-
-  return (
-    <div style={{ padding: 32 }}>
-      <h1>Hello World</h1>
-      <p>Count: {count}</p>
-      <button onClick={increment}>+1</button>
-    </div>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
