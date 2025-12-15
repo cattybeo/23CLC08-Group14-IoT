@@ -30,7 +30,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, variant = "default", bad
   const style = variants[variant] || variants.default;
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-xs">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">

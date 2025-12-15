@@ -84,7 +84,7 @@ const options = {
 
 const StockLineChart = () => {
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-xs">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Real-time stock update</CardTitle>
       </CardHeader>

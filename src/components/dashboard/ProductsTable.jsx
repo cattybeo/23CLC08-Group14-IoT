@@ -154,7 +154,7 @@ const ProductsTable = () => {
   };
 
   return (
-    <Card className="border-0 shadow-sm" id="products-section">
+    <Card className="border-0 shadow-xs" id="products-section">
       <CardHeader className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

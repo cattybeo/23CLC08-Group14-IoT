@@ -43,7 +43,7 @@ const Sidebar = ({ collapsed, onToggle, activeItem, onNavClick }) => {
         {/* Toggle Button */}
         <button
           onClick={onToggle}
-          className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-muted transition-colors"
+          className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-card border border-border shadow-xs hover:bg-muted transition-colors"
         >
           {collapsed ? (
             <ChevronRight className="h-3 w-3 text-foreground" />
