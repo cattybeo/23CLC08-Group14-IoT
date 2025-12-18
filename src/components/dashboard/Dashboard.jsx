@@ -57,7 +57,7 @@ const Dashboard = () => {
         </div>
         <div className="xl:col-span-2 space-y-4">
           <GaugeChart />
-          <QuickStats />
+          <QuickStats stats={stats} />
         </div>
       </div>
 

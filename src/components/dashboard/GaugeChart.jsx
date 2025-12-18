@@ -1,12 +1,46 @@
+import { useState, useEffect } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { dashboardStats } from "@/data/mockData";
+import { productService } from "@/services/product.service";
 
 ChartJS.register(ArcElement, Tooltip);
 
 const GaugeChart = () => {
-  const percentage = dashboardStats.stockUtilization;
+  const [latestProduct, setLatestProduct] = useState(null);
+
+  useEffect(() => {
+    // Subscribe to sales_logs INSERT events
+    const channel = productService.subscribeToSales(async (payload) => {
+      console.log('Sale event received:', payload);
+
+      const productId = payload.new?.product_id;
+      if (!productId) return;
+
+      // Fetch product details
+      const { data, error } = await productService.fetchById(productId);
+
+      if (error) {
+        console.error('Error fetching product:', error);
+        return;
+      }
+
+      console.log('Latest sold product:', data);
+      setLatestProduct(data);
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, []);
+
+  // Calculate stock safety percentage
+  const percentage = latestProduct
+    ? ((latestProduct.current_stock / latestProduct.init_stock) * 100).toFixed(2)
+    : 0;
+
+  const productName = latestProduct?.name || "Waiting for sale...";
 
   const data = {
     datasets: [
@@ -41,7 +75,7 @@ const GaugeChart = () => {
           <Doughnut data={data} options={options} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
             <span className="text-3xl font-bold text-success">{percentage}%</span>
-            <span className="text-sm text-muted-foreground">Stock utilization</span>
+            <span className="text-sm text-muted-foreground">{productName}</span>
           </div>
         </div>
       </CardContent>
