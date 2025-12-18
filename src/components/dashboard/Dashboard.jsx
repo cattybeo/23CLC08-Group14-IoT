@@ -4,9 +4,17 @@ import StockLineChart from "./StockLineChart";
 import GaugeChart from "./GaugeChart";
 import QuickStats from "./QuickStats";
 import ProductsTable from "./ProductsTable";
-import { dashboardStats } from "@/data/mockData";
+import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 
 const Dashboard = () => {
+  const { data: stats, isLoading } = useDashboardStats();
+
+  const growthPercentage = stats?.growthPercentage || 0;
+  const growthText = growthPercentage >= 0
+    ? `+${growthPercentage.toFixed(2)}% vs yesterday`
+    : `${growthPercentage.toFixed(2)}% vs yesterday`;
+  const growthVariant = growthPercentage >= 0 ? "success" : "danger";
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -21,24 +29,24 @@ const Dashboard = () => {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <StatCard
           title="Total Products"
-          value={dashboardStats.totalProducts.toLocaleString()}
+          value={stats?.totalProducts?.toLocaleString() || "0"}
           subtitle="All active SKUs in the database"
           icon={Package}
           variant="default"
         />
         <StatCard
           title="Low Stock Alert"
-          value={dashboardStats.lowStockAlert}
+          value={stats?.lowStockAlert || 0}
           badgeText="Action required"
           icon={AlertTriangle}
           variant="danger"
         />
         <StatCard
           title="Sold Today"
-          value={dashboardStats.soldToday}
-          badgeText="+12% vs yesterday"
+          value={stats?.soldToday || 0}
+          badgeText={growthText}
           icon={ShoppingCart}
-          variant="success"
+          variant={growthVariant}
         />
       </div>
 

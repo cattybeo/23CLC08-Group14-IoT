@@ -58,6 +58,15 @@ export const productService = {
                 callback
             )
             .subscribe();
+    },
+
+    fetchSalesToday() {
+        const today = new Date().toISOString().split('T')[0];
+        return supabase
+            .from('global_sales_performance')
+            .select('today_total, growth_percentage')
+            .eq('sale_day', today)
+            .single();
     }
 };
 
@@ -68,3 +77,4 @@ export const update = productService.update;
 export const remove = productService.remove;
 export const fetchProductChartData = productService.fetchProductChartData;
 export const subscribeToSales = productService.subscribeToSales;
+export const fetchSalesToday = productService.fetchSalesToday;

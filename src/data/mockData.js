@@ -55,7 +55,6 @@ export const stockHistoryData = {
   ],
 };
 
-// Dashboard stats
 export const dashboardStats = {
   totalProducts: 1234,
   lowStockAlert: 99,
