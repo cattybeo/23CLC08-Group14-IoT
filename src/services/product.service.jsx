@@ -37,7 +37,9 @@ export const productService = {
         return supabase
             .from('products')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .select()
+            .single();
     }
 };
 

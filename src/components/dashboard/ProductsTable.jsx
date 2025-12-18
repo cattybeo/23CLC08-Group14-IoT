@@ -50,7 +50,10 @@ const ProductsTable = () => {
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editSku, setEditSku] = useState("");
   const [editName, setEditName] = useState("");
+  const [editRfid, setEditRfid] = useState("");
+  const [editCurrentStock, setEditCurrentStock] = useState("");
   const [editInitStock, setEditInitStock] = useState("");
 
   // Create dialog state
@@ -99,27 +102,41 @@ const ProductsTable = () => {
   // Edit handlers
   const openEditDialog = (product) => {
     setEditingProduct(product);
+    setEditSku(product.sku || "");
     setEditName(product.name);
+    setEditRfid(product.rfid_uid || "");
+    setEditCurrentStock(product.current_stock?.toString() || "");
     setEditInitStock(product.init_stock?.toString() || "");
     setEditDialogOpen(true);
   };
 
   const handleEditSubmit = async () => {
-    if (!editName.trim() || !editInitStock) return;
+    if (!editSku.trim() || !editName.trim() || !editRfid.trim() || !editCurrentStock || !editInitStock) return;
 
+    const newCurrentStock = parseInt(editCurrentStock);
     const newInitStock = parseInt(editInitStock);
     const updateData = {
+      sku: editSku.trim(),
       name: editName.trim(),
+      rfid_uid: editRfid.trim(),
+      current_stock: newCurrentStock,
       init_stock: newInitStock,
     };
 
     // If init_stock < current_stock, update current_stock to match init_stock
-    if (newInitStock < editingProduct.current_stock) {
+    if (newInitStock < newCurrentStock) {
       updateData.current_stock = newInitStock;
     }
 
     try {
-      await productService.update(editingProduct.id, updateData);
+      const { data, error } = await productService.update(editingProduct.id, updateData);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+
+      console.log('Update successful:', data);
       refetch();
       setEditDialogOpen(false);
       setEditingProduct(null);
@@ -130,7 +147,14 @@ const ProductsTable = () => {
 
   const handleDelete = async () => {
     try {
-      await productService.remove(editingProduct.id);
+      const { data, error } = await productService.remove(editingProduct.id);
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+
+      console.log('Delete successful:', data);
       refetch();
       setEditDialogOpen(false);
       setEditingProduct(null);
@@ -169,13 +193,6 @@ const ProductsTable = () => {
       modified_at: new Date().toISOString()
     };
 
-    console.log('=== ADD STOCK DEBUG ===');
-    console.log('Product ID:', addingProduct.id);
-    console.log('Product:', addingProduct.name);
-    console.log('Current stock:', addingProduct.current_stock);
-    console.log('Quantity to add:', quantityToAdd);
-    console.log('Update data:', updateData);
-
     try {
       const { data, error } = await productService.update(addingProduct.id, updateData);
 
@@ -206,9 +223,6 @@ const ProductsTable = () => {
       init_stock: quantity,
       low_stock_threshold: lowStockThreshold,
     };
-
-    console.log('=== CREATE PRODUCT DEBUG ===');
-    console.log('Product data to create:', newProductData);
 
     try {
       const { data, error } = await productService.create(newProductData);
@@ -400,10 +414,14 @@ const ProductsTable = () => {
           {editingProduct && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-prod-id">Product ID</Label>
-                <div className="font-mono text-sm bg-muted px-3 py-2 rounded border">
-                  {editingProduct.sku}
-                </div>
+                <Label htmlFor="edit-sku">Product SKU</Label>
+                <Input
+                  id="edit-sku"
+                  value={editSku}
+                  onChange={(e) => setEditSku(e.target.value)}
+                  className="bg-muted/50"
+                  required
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-name">Product Name</Label>
@@ -416,12 +434,24 @@ const ProductsTable = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-quantity">Current Stock (Read-only)</Label>
+                <Label htmlFor="edit-rfid">RFID</Label>
                 <Input
-                  id="edit-quantity"
-                  value={editingProduct.current_stock}
-                  disabled
-                  className="bg-muted"
+                  id="edit-rfid"
+                  value={editRfid}
+                  onChange={(e) => setEditRfid(e.target.value)}
+                  className="bg-muted/50"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-current-stock">Current Stock</Label>
+                <Input
+                  id="edit-current-stock"
+                  type="number"
+                  value={editCurrentStock}
+                  onChange={(e) => setEditCurrentStock(e.target.value)}
+                  className="bg-muted/50"
+                  required
                 />
               </div>
               <div className="grid gap-2">
