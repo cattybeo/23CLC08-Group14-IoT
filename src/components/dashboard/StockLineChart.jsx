@@ -30,16 +30,7 @@ const options = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: true,
-      position: "top",
-      align: "end",
-      labels: {
-        usePointStyle: true,
-        boxWidth: 8,
-        font: {
-          size: 12,
-        },
-      },
+      display: false,
     },
     tooltip: {
       backgroundColor: "hsl(222, 47%, 11%)",
@@ -144,7 +135,7 @@ const StockLineChart = () => {
               y: {
                 ...options.scales.y,
                 min: 0,
-                max: maxValue + Math.ceil(maxValue * 0.1), // Add 10% padding to max
+                max: maxValue + Math.ceil(maxValue * 0.05), // Add 5% padding to max
               }
             }
           });
@@ -171,7 +162,7 @@ const StockLineChart = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="h-[calc(100%-4rem)]">
-        <div className="h-full">
+        <div className="h-full min-h-[300px]">
           {chartData ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
