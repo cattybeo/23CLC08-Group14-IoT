@@ -40,6 +40,24 @@ export const productService = {
             .eq('id', id)
             .select()
             .single();
+    },
+
+    fetchProductChartData(productId) {
+        return supabase
+            .from('product_sales_timeseries')
+            .select('sale_day, total_sold')
+            .eq('product_id', productId)
+            .order('sale_day', { ascending: true });
+    },
+
+    subscribeToSales(callback) {
+        return supabase
+            .channel('sales-channel')
+            .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'sales_logs' },
+                callback
+            )
+            .subscribe();
     }
 };
 
@@ -48,3 +66,5 @@ export const fetchById = productService.fetchById;
 export const create = productService.create;
 export const update = productService.update;
 export const remove = productService.remove;
+export const fetchProductChartData = productService.fetchProductChartData;
+export const subscribeToSales = productService.subscribeToSales;
