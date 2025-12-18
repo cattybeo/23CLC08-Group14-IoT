@@ -51,13 +51,18 @@ export const productService = {
     },
 
     subscribeToSales(callback) {
-        return supabase
-            .channel('sales-channel')
+        const channelName = `sales-${Math.random().toString(36).substring(7)}`;
+        const channel = supabase
+            .channel(channelName)
             .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'sales_logs' },
                 callback
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`[Supabase] Channel ${channelName} status:`, status);
+            });
+
+        return channel;
     },
 
     fetchSalesToday() {

@@ -42,11 +42,27 @@ const GaugeChart = () => {
 
   const productName = latestProduct?.name || "Waiting for sale...";
 
+  // Determine color based on percentage
+  const getGaugeColor = (percent) => {
+    if (percent >= 50) return "hsl(142, 76%, 36%)"; // Green - ổn
+    if (percent >= 20) return "hsl(48, 96%, 53%)"; // Yellow - mid
+    return "hsl(0, 84%, 60%)"; // Red - thấp
+  };
+
+  const getTextColor = (percent) => {
+    if (percent >= 50) return "text-success";
+    if (percent >= 20) return "text-warning";
+    return "text-destructive";
+  };
+
+  const gaugeColor = getGaugeColor(percentage);
+  const textColor = getTextColor(percentage);
+
   const data = {
     datasets: [
       {
         data: [percentage, 100 - percentage],
-        backgroundColor: ["hsl(142, 76%, 36%)", "hsl(220, 14%, 92%)"],
+        backgroundColor: [gaugeColor, "hsl(220, 14%, 92%)"],
         borderWidth: 0,
         circumference: 180,
         rotation: 270,
@@ -74,7 +90,7 @@ const GaugeChart = () => {
         <div className="relative h-[180px]">
           <Doughnut data={data} options={options} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
-            <span className="text-3xl font-bold text-success">{percentage}%</span>
+            <span className={`text-3xl font-bold ${textColor}`}>{percentage}%</span>
             <span className="text-sm text-muted-foreground">{productName}</span>
           </div>
         </div>
