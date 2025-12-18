@@ -25,13 +25,13 @@ import { cn } from "@/lib/utils";
 import { useProducts } from "@/hooks/use-products";
 import { productService } from "@/services/product.service";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 4;
 
-const getStatusBadge = (quantity, maxStock) => {
+const getStatusBadge = (quantity, initStock) => {
   if (quantity === 0) {
     return { label: "Out of Stock", variant: "destructive" };
   }
-  if (quantity < maxStock * 0.2) {
+  if (quantity < initStock * 0.2) {
     return { label: "Low Stock", variant: "warning" };
   }
   return { label: "In Stock", variant: "success" };
@@ -51,18 +51,25 @@ const ProductsTable = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editName, setEditName] = useState("");
-  const [editMaxStock, setEditMaxStock] = useState("");
+  const [editInitStock, setEditInitStock] = useState("");
 
   // Create dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newQuantity, setNewQuantity] = useState("");
-  const [newMaxStock, setNewMaxStock] = useState("");
+  const [newSku, setNewSku] = useState("");
+  const [newRfid, setNewRfid] = useState("");
+  const [newLowStockThreshold, setNewLowStockThreshold] = useState("");
 
-  // Sort by modifiedAt descending (newest first)
+  // Add stock dialog state
+  const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(null);
+  const [addStockQuantity, setAddStockQuantity] = useState("");
+
+  // Sort by modified_at descending (newest first)
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) =>
-      new Date(b.modifiedAt) - new Date(a.modifiedAt)
+      new Date(b.modified_at || b.created_at) - new Date(a.modified_at || a.created_at)
     );
   }, [products]);
 
@@ -73,8 +80,7 @@ const ProductsTable = () => {
     return sortedProducts.filter(
       (product) =>
         product.name.toLowerCase().includes(query) ||
-        product.prod_id.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query)
+        product.sku.toLowerCase().includes(query)
     );
   }, [searchQuery, sortedProducts]);
 
@@ -94,64 +100,130 @@ const ProductsTable = () => {
   const openEditDialog = (product) => {
     setEditingProduct(product);
     setEditName(product.name);
-    setEditMaxStock(product.maxStock.toString());
+    setEditInitStock(product.init_stock?.toString() || "");
     setEditDialogOpen(true);
   };
 
-  const handleEditSubmit = () => {
-    if (!editName.trim() || !editMaxStock) return;
+  const handleEditSubmit = async () => {
+    if (!editName.trim() || !editInitStock) return;
 
-    setProducts(prev => prev.map(p =>
-      p.id === editingProduct.id
-        ? {
-          ...p,
-          name: editName.trim(),
-          maxStock: parseInt(editMaxStock),
-          modifiedAt: new Date().toISOString()
-        }
-        : p
-    ));
-    setEditDialogOpen(false);
-    setEditingProduct(null);
+    const newInitStock = parseInt(editInitStock);
+    const updateData = {
+      name: editName.trim(),
+      init_stock: newInitStock,
+    };
+
+    // If init_stock < current_stock, update current_stock to match init_stock
+    if (newInitStock < editingProduct.current_stock) {
+      updateData.current_stock = newInitStock;
+    }
+
+    try {
+      await productService.update(editingProduct.id, updateData);
+      refetch();
+      setEditDialogOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error('Error updating product:', error);
+    }
   };
 
-  const handleDelete = () => {
-    setProducts(prev => prev.filter(p => p.id !== editingProduct.id));
-    setEditDialogOpen(false);
-    setEditingProduct(null);
+  const handleDelete = async () => {
+    try {
+      await productService.remove(editingProduct.id);
+      refetch();
+      setEditDialogOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
   };
 
   // Create handlers
   const openCreateDialog = () => {
     setNewName("");
     setNewQuantity("");
-    setNewMaxStock("");
+    setNewSku("");
+    setNewRfid("");
+    setNewLowStockThreshold("");
     setCreateDialogOpen(true);
   };
 
-  const handleQuantityChange = (value) => {
-    setNewQuantity(value);
-    if (!newMaxStock && value) {
-      setNewMaxStock(value);
+  // Add stock handlers
+  const openAddStockDialog = (product) => {
+    setAddingProduct(product);
+    setAddStockQuantity("");
+    setAddStockDialogOpen(true);
+  };
+
+  const handleAddStockSubmit = async () => {
+    if (!addStockQuantity) return;
+
+    const quantityToAdd = parseInt(addStockQuantity);
+    const newCurrentStock = addingProduct.current_stock + quantityToAdd;
+    const newInitStock = newCurrentStock;
+
+    const updateData = {
+      current_stock: newCurrentStock,
+      init_stock: newInitStock,
+      modified_at: new Date().toISOString()
+    };
+
+    console.log('=== ADD STOCK DEBUG ===');
+    console.log('Product ID:', addingProduct.id);
+    console.log('Product:', addingProduct.name);
+    console.log('Current stock:', addingProduct.current_stock);
+    console.log('Quantity to add:', quantityToAdd);
+    console.log('Update data:', updateData);
+
+    try {
+      const { data, error } = await productService.update(addingProduct.id, updateData);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+
+      console.log('Update successful:', data);
+      refetch();
+      setAddStockDialogOpen(false);
+      setAddingProduct(null);
+    } catch (error) {
+      console.error('Error adding stock:', error);
     }
   };
 
-  const handleCreateSubmit = () => {
-    if (!newName.trim() || !newQuantity) return;
+  const handleCreateSubmit = async () => {
+    if (!newName.trim() || !newQuantity || !newSku.trim()) return;
 
-    const newProduct = {
-      id: Date.now(),
-      prod_id: generateProdId(),
+    const quantity = parseInt(newQuantity);
+    const lowStockThreshold = newLowStockThreshold ? parseInt(newLowStockThreshold) : 0;
+    const newProductData = {
+      sku: newSku.trim(),
       name: newName.trim(),
-      description: "New product",
-      quantity: parseInt(newQuantity),
-      maxStock: parseInt(newMaxStock) || parseInt(newQuantity),
-      createdAt: new Date().toISOString(),
-      modifiedAt: new Date().toISOString(),
+      rfid_uid: newRfid.trim() || null,
+      current_stock: quantity,
+      init_stock: quantity,
+      low_stock_threshold: lowStockThreshold,
     };
 
-    setProducts(prev => [newProduct, ...prev]);
-    setCreateDialogOpen(false);
+    console.log('=== CREATE PRODUCT DEBUG ===');
+    console.log('Product data to create:', newProductData);
+
+    try {
+      const { data, error } = await productService.create(newProductData);
+
+      if (error) {
+        console.error('Supabase create error:', error);
+        throw error;
+      }
+
+      console.log('Create successful:', data);
+      refetch();
+      setCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating product:', error);
+    }
   };
 
   return (
@@ -185,23 +257,28 @@ const ProductsTable = () => {
       </CardHeader>
       <CardContent>
         <div className="mb-4 text-right text-sm text-muted-foreground">
-          Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
+          {filteredProducts.length > 0 ? (
+            <>Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items</>
+          ) : (
+            <>Showing 0 items</>
+          )}
         </div>
 
         <div className="rounded-lg border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="w-[120px]">Product ID</TableHead>
-                <TableHead>Product Name</TableHead>
+                <TableHead className="w-[180px]">Product ID</TableHead>
+                <TableHead className="w-[250px]">Product Name</TableHead>
                 <TableHead className="text-center">Quantity</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center w-[100px]">Action</TableHead>
+                <TableHead className="text-center w-[120px]">Action 1</TableHead>
+                <TableHead className="text-center w-[120px]">Action 2</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedProducts.map((product) => {
-                const status = getStatusBadge(product.quantity, product.maxStock);
+                const status = getStatusBadge(product.current_stock, product.init_stock);
 
                 return (
                   <TableRow
@@ -210,19 +287,14 @@ const ProductsTable = () => {
                   >
                     <TableCell>
                       <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                        {product.prod_id}
+                        {product.sku}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {product.description}
-                        </p>
-                      </div>
+                      <p className="font-medium">{product.name}</p>
                     </TableCell>
                     <TableCell className="text-center font-medium">
-                      {product.quantity}
+                      {product.current_stock}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
@@ -240,8 +312,19 @@ const ProductsTable = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openEditDialog(product)}
+                        onClick={() => openAddStockDialog(product)}
                         className="gap-1 border-success text-success bg-success/10 hover:bg-success/20 rounded-full"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Stock
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(product)}
+                        className="gap-1 border-border text-foreground bg-card hover:bg-muted/50 rounded-full"
                       >
                         <Pencil className="h-4 w-4" />
                         Modify
@@ -260,7 +343,7 @@ const ProductsTable = () => {
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || filteredProducts.length === 0}
           >
             <ChevronLeft className="h-4 w-4" />
             Prev
@@ -297,7 +380,7 @@ const ProductsTable = () => {
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalPages || totalPages === 0 || filteredProducts.length === 0}
           >
             Next
             <ChevronRight className="h-4 w-4" />
@@ -319,7 +402,7 @@ const ProductsTable = () => {
               <div className="grid gap-2">
                 <Label htmlFor="edit-prod-id">Product ID</Label>
                 <div className="font-mono text-sm bg-muted px-3 py-2 rounded border">
-                  {editingProduct.prod_id}
+                  {editingProduct.sku}
                 </div>
               </div>
               <div className="grid gap-2">
@@ -329,25 +412,27 @@ const ProductsTable = () => {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="bg-muted/50"
+                  required
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-quantity">Quantity (Read-only)</Label>
+                <Label htmlFor="edit-quantity">Current Stock (Read-only)</Label>
                 <Input
                   id="edit-quantity"
-                  value={editingProduct.quantity}
+                  value={editingProduct.current_stock}
                   disabled
                   className="bg-muted"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-maxstock">In Stock (Max Stock)</Label>
+                <Label htmlFor="edit-initstock">Initial Stock</Label>
                 <Input
-                  id="edit-maxstock"
+                  id="edit-initstock"
                   type="number"
-                  value={editMaxStock}
-                  onChange={(e) => setEditMaxStock(e.target.value)}
+                  value={editInitStock}
+                  onChange={(e) => setEditInitStock(e.target.value)}
                   className="bg-muted/50"
+                  required
                 />
               </div>
             </div>
@@ -358,14 +443,14 @@ const ProductsTable = () => {
               onClick={handleDelete}
               className="border-destructive text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-full"
             >
-              Delete
+              DELETE PERMANENT
             </Button>
             <Button
               variant="outline"
               onClick={handleEditSubmit}
               className="border-primary text-primary bg-primary/10 hover:bg-primary/20 rounded-full"
             >
-              Submit
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -382,6 +467,17 @@ const ProductsTable = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="new-sku">Product SKU</Label>
+              <Input
+                id="new-sku"
+                value={newSku}
+                onChange={(e) => setNewSku(e.target.value)}
+                placeholder="Enter SKU (e.g., PROD-001)"
+                className="bg-muted/50"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="new-name">Product Name</Label>
               <Input
                 id="new-name"
@@ -389,28 +485,42 @@ const ProductsTable = () => {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter product name"
                 className="bg-muted/50"
+                required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-quantity">Quantity</Label>
+              <Label htmlFor="new-rfid">RFID</Label>
+              <Input
+                id="new-rfid"
+                value={newRfid}
+                onChange={(e) => setNewRfid(e.target.value)}
+                placeholder="Enter RFID tag"
+                className="bg-muted/50"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="new-quantity">Initial Stock Quantity</Label>
               <Input
                 id="new-quantity"
                 type="number"
                 value={newQuantity}
-                onChange={(e) => handleQuantityChange(e.target.value)}
+                onChange={(e) => setNewQuantity(e.target.value)}
                 placeholder="Enter quantity"
                 className="bg-muted/50"
+                required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-maxstock">In Stock (Max Stock)</Label>
+              <Label htmlFor="new-low-stock">Low Stock Threshold</Label>
               <Input
-                id="new-maxstock"
+                id="new-low-stock"
                 type="number"
-                value={newMaxStock}
-                onChange={(e) => setNewMaxStock(e.target.value)}
-                placeholder="Auto-fills from quantity"
+                value={newLowStockThreshold}
+                onChange={(e) => setNewLowStockThreshold(e.target.value)}
+                placeholder="Enter threshold (default: 0)"
                 className="bg-muted/50"
+                required
               />
             </div>
           </div>
@@ -428,6 +538,59 @@ const ProductsTable = () => {
               className="border-primary text-primary bg-primary/10 hover:bg-primary/20 rounded-full"
             >
               Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Stock Dialog */}
+      <Dialog open={addStockDialogOpen} onOpenChange={setAddStockDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Stock</DialogTitle>
+            <DialogDescription>
+              Add more stock quantity to this product.
+            </DialogDescription>
+          </DialogHeader>
+          {addingProduct && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="add-product-name">Product Name</Label>
+                <Input
+                  id="add-product-name"
+                  value={addingProduct.name}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="add-quantity">Quantity to Add</Label>
+                <Input
+                  id="add-quantity"
+                  type="number"
+                  value={addStockQuantity}
+                  onChange={(e) => setAddStockQuantity(e.target.value)}
+                  placeholder="Enter quantity to add"
+                  className="bg-muted/50"
+                  required
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddStockDialogOpen(false)}
+              className="border-border text-foreground bg-card hover:bg-muted/50 rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleAddStockSubmit}
+              className="border-success text-success bg-success/10 hover:bg-success/20 rounded-full"
+            >
+              Add Stock
             </Button>
           </DialogFooter>
         </DialogContent>

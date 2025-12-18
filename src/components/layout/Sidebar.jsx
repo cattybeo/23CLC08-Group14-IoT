@@ -30,7 +30,7 @@ const Sidebar = ({ collapsed, onToggle, activeItem, onNavClick }) => {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
                 <Package className="h-5 w-5 text-sidebar-primary-foreground" />
               </div>
-              <span className="text-lg font-semibold">SmartStock</span>
+              <span className="text-lg font-semibold">Smart Stock</span>
             </div>
           )}
           {collapsed && (
@@ -57,7 +57,7 @@ const Sidebar = ({ collapsed, onToggle, activeItem, onNavClick }) => {
           {navItems.map((item) => {
             const Icon = item.id === "dashboard" ? LayoutDashboard : Package;
             const isActive = activeItem === item.id;
-            
+
             return (
               <button
                 key={item.id}

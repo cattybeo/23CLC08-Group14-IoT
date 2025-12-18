@@ -11,7 +11,7 @@ const QuickStats = () => {
           <p className="mt-1 text-2xl font-bold">{dashboardStats.totalUnits.toLocaleString()}</p>
         </CardContent>
       </Card>
-      
+
       <Card className="border-0 shadow-xs">
         <CardContent className="p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">Out of Stock</p>

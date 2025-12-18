@@ -84,12 +84,12 @@ const options = {
 
 const StockLineChart = () => {
   return (
-    <Card className="border-0 shadow-xs">
+    <Card className="border-0 shadow-xs h-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Real-time Stock</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[280px]">
+      <CardContent className="h-[calc(100%-4rem)]">
+        <div className="h-full">
           <Line data={stockHistoryData} options={options} />
         </div>
       </CardContent>

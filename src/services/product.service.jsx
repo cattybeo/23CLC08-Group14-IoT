@@ -16,7 +16,7 @@ export const productService = {
             .single();
     },
 
-    add(product) {
+    create(product) {
         return supabase
             .from('products')
             .insert([product])
@@ -38,22 +38,11 @@ export const productService = {
             .from('products')
             .delete()
             .eq('id', id);
-    },
-
-    subscribeToChanges(callback) {
-        return supabase
-            .channel('products-channel')
-            .on('postgres_changes',
-                { event: '*', schema: 'public', table: 'products' },
-                callback
-            )
-            .subscribe();
     }
 };
 
 export const fetchAll = productService.fetchAll;
 export const fetchById = productService.fetchById;
-export const add = productService.add;
+export const create = productService.create;
 export const update = productService.update;
 export const remove = productService.remove;
-export const subscribeToChanges = productService.subscribeToChanges;
