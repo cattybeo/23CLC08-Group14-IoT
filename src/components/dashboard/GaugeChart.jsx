@@ -7,7 +7,7 @@ ChartJS.register(ArcElement, Tooltip);
 
 const GaugeChart = () => {
   const percentage = dashboardStats.stockUtilization;
-  
+
   const data = {
     datasets: [
       {
@@ -34,7 +34,7 @@ const GaugeChart = () => {
   return (
     <Card className="border-0 shadow-xs">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Most recent stock quantity</CardTitle>
+        <CardTitle className="text-base font-semibold">Stock Safety</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative h-[180px]">

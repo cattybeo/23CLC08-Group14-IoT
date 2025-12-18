@@ -21,8 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { products as initialProducts } from "@/data/mockData";
 import { cn } from "@/lib/utils";
+import { useProducts } from "@/hooks/use-products";
+import { productService } from "@/services/product.service";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -42,16 +43,16 @@ const generateProdId = () => {
 };
 
 const ProductsTable = () => {
-  const [products, setProducts] = useState(initialProducts);
+  const { data: products = [], isLoading, refetch } = useProducts();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editName, setEditName] = useState("");
   const [editMaxStock, setEditMaxStock] = useState("");
-  
+
   // Create dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -60,14 +61,14 @@ const ProductsTable = () => {
 
   // Sort by modifiedAt descending (newest first)
   const sortedProducts = useMemo(() => {
-    return [...products].sort((a, b) => 
+    return [...products].sort((a, b) =>
       new Date(b.modifiedAt) - new Date(a.modifiedAt)
     );
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return sortedProducts;
-    
+
     const query = searchQuery.toLowerCase();
     return sortedProducts.filter(
       (product) =>
@@ -99,15 +100,15 @@ const ProductsTable = () => {
 
   const handleEditSubmit = () => {
     if (!editName.trim() || !editMaxStock) return;
-    
-    setProducts(prev => prev.map(p => 
-      p.id === editingProduct.id 
-        ? { 
-            ...p, 
-            name: editName.trim(), 
-            maxStock: parseInt(editMaxStock), 
-            modifiedAt: new Date().toISOString() 
-          }
+
+    setProducts(prev => prev.map(p =>
+      p.id === editingProduct.id
+        ? {
+          ...p,
+          name: editName.trim(),
+          maxStock: parseInt(editMaxStock),
+          modifiedAt: new Date().toISOString()
+        }
         : p
     ));
     setEditDialogOpen(false);
@@ -137,7 +138,7 @@ const ProductsTable = () => {
 
   const handleCreateSubmit = () => {
     if (!newName.trim() || !newQuantity) return;
-    
+
     const newProduct = {
       id: Date.now(),
       prod_id: generateProdId(),
@@ -148,7 +149,7 @@ const ProductsTable = () => {
       createdAt: new Date().toISOString(),
       modifiedAt: new Date().toISOString(),
     };
-    
+
     setProducts(prev => [newProduct, ...prev]);
     setCreateDialogOpen(false);
   };
@@ -173,8 +174,8 @@ const ProductsTable = () => {
             />
           </div>
         </div>
-        <Button 
-          onClick={openCreateDialog} 
+        <Button
+          onClick={openCreateDialog}
           variant="outline"
           className="gap-2 w-fit ml-auto border-primary text-primary bg-primary/10 hover:bg-primary/20 hover:text-primary rounded-full"
         >
@@ -186,7 +187,7 @@ const ProductsTable = () => {
         <div className="mb-4 text-right text-sm text-muted-foreground">
           Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
         </div>
-        
+
         <div className="rounded-lg border overflow-hidden">
           <Table>
             <TableHeader>
@@ -201,7 +202,7 @@ const ProductsTable = () => {
             <TableBody>
               {paginatedProducts.map((product) => {
                 const status = getStatusBadge(product.quantity, product.maxStock);
-                
+
                 return (
                   <TableRow
                     key={product.id}
@@ -264,7 +265,7 @@ const ProductsTable = () => {
             <ChevronLeft className="h-4 w-4" />
             Prev
           </Button>
-          
+
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum;
@@ -277,7 +278,7 @@ const ProductsTable = () => {
               } else {
                 pageNum = currentPage - 2 + i;
               }
-              
+
               return (
                 <Button
                   key={pageNum}
@@ -291,7 +292,7 @@ const ProductsTable = () => {
               );
             })}
           </div>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -352,14 +353,14 @@ const ProductsTable = () => {
             </div>
           )}
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleDelete}
               className="border-destructive text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-full"
             >
               Delete
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={handleEditSubmit}
               className="border-primary text-primary bg-primary/10 hover:bg-primary/20 rounded-full"
@@ -414,14 +415,14 @@ const ProductsTable = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setCreateDialogOpen(false)}
               className="border-muted-foreground text-muted-foreground bg-muted/50 hover:bg-muted rounded-full"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={handleCreateSubmit}
               className="border-primary text-primary bg-primary/10 hover:bg-primary/20 rounded-full"

@@ -2,8 +2,6 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
-
-import { useIsMobile } from "@/hooks/use-mobile.jsx";
 import { cn } from "@/lib/utils.js";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -15,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
@@ -30,11 +27,9 @@ function useSidebar() {
 }
 
 const SidebarProvider = React.forwardRef(({ defaultOpen = true, open: openProp, onOpenChange: setOpenProp, className, style, children, ...props }, ref) => {
-  const isMobile = useIsMobile();
-  const [openMobile, setOpenMobile] = React.useState(false);
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
-  
+
   const setOpen = React.useCallback((value) => {
     const openState = typeof value === "function" ? value(open) : value;
     if (setOpenProp) {
@@ -46,8 +41,8 @@ const SidebarProvider = React.forwardRef(({ defaultOpen = true, open: openProp, 
   }, [setOpenProp, open]);
 
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile]);
+    return setOpen((open) => !open);
+  }, [setOpen]);
 
   React.useEffect(() => {
     const handleKeyDown = (event) => {
@@ -63,8 +58,8 @@ const SidebarProvider = React.forwardRef(({ defaultOpen = true, open: openProp, 
   const state = open ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo(() => ({
-    state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar,
-  }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]);
+    state, open, setOpen, toggleSidebar,
+  }), [state, open, setOpen, toggleSidebar]);
 
   return (
     <SidebarContext.Provider value={contextValue}>
@@ -84,23 +79,13 @@ const SidebarProvider = React.forwardRef(({ defaultOpen = true, open: openProp, 
 SidebarProvider.displayName = "SidebarProvider";
 
 const Sidebar = React.forwardRef(({ side = "left", variant = "sidebar", collapsible = "offcanvas", className, children, ...props }, ref) => {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { state } = useSidebar();
 
   if (collapsible === "none") {
     return (
       <div className={cn("flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground", className)} ref={ref} {...props}>
         {children}
       </div>
-    );
-  }
-
-  if (isMobile) {
-    return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetContent data-sidebar="sidebar" data-mobile="true" className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden" style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE }} side={side}>
-          <div className="flex h-full w-full flex-col">{children}</div>
-        </SheetContent>
-      </Sheet>
     );
   }
 
