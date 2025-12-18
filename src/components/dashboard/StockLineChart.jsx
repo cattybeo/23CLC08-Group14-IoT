@@ -86,7 +86,7 @@ const StockLineChart = () => {
   return (
     <Card className="border-0 shadow-xs h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Real-time Stock</CardTitle>
+        <CardTitle className="text-base font-semibold">Real-time Sold</CardTitle>
       </CardHeader>
       <CardContent className="h-[calc(100%-4rem)]">
         <div className="h-full">
