@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import mqttService from "@/services/mqtt.service";
 import {
   Table,
   TableBody,
@@ -47,6 +48,18 @@ const ProductsTable = () => {
   const { data: products = [], isLoading, refetch } = useProducts();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Publish thông tin sản phẩm cho LCD device
+  const publishToLcd = async (prodName, quantity) => {
+    try {
+      await mqttService.publish("group14/device/lcd", {
+        prod_name: prodName,
+        guantity: quantity,
+      });
+    } catch (error) {
+      // Bỏ qua lỗi publish để không chặn UI
+    }
+  };
 
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -146,6 +159,8 @@ const ProductsTable = () => {
         description: `${editName} has been updated successfully`,
         duration: 3000
       });
+      // Gửi thông tin sản phẩm đến LCD sau khi cập nhật
+      await publishToLcd(editName, updateData.current_stock);
       refetch();
       setEditDialogOpen(false);
       setEditingProduct(null);
@@ -228,6 +243,8 @@ const ProductsTable = () => {
         description: `Added ${quantityToAdd} units to ${addingProduct.name}`,
         duration: 3000
       });
+      // Gửi thông tin sản phẩm đến LCD sau khi nhập thêm hàng
+      await publishToLcd(addingProduct.name, newCurrentStock);
       refetch();
       setAddStockDialogOpen(false);
       setAddingProduct(null);
@@ -267,6 +284,8 @@ const ProductsTable = () => {
         description: `${newName} has been added to inventory`,
         duration: 3000
       });
+      // Gửi thông tin sản phẩm mới đến LCD
+      await publishToLcd(newName, quantity);
       refetch();
       setCreateDialogOpen(false);
     } catch (error) {

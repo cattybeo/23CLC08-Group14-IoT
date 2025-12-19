@@ -21,8 +21,8 @@ class MQTTIntegrationService {
             const brokerUrl = getBrokerUrl();
             await mqttService.connect(brokerUrl, {
                 clientId: `iot_dashboard_${Math.random().toString(16).slice(2, 10)}`,
-                username: import.meta.env.MQTT_USERNAME,
-                password: import.meta.env.MQTT_PASSWORD,
+                username: import.meta.env.VITE_MQTT_USERNAME,
+                password: import.meta.env.VITE_MQTT_PASSWORD,
                 protocol: 'wss',
                 rejectUnauthorized: true
             });
@@ -107,6 +107,12 @@ class MQTTIntegrationService {
 
             // Cập nhật thành công, thêm log
             await this.logSale(product, quantity, rfid_id);
+
+            // Gửi lệnh hiển thị lên LCD và buzzer
+            await mqttService.publish('group14/device/lcd_buzzer', {
+                prod_name: product.name,
+                quantity: quantity,
+            });
 
             // Invalidate React Query cache để UI update
             queryClient.invalidateQueries({ queryKey: ['products'] });

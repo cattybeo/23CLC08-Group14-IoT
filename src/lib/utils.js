@@ -6,5 +6,5 @@ export function cn(...inputs) {
 }
 
 export function getBrokerUrl() {
-  return `wss://${import.meta.env.MQTT_URL}:${import.meta.env.MQTT_WEBSOCKET_PORT}/mqtt`;
+  return `wss://${import.meta.env.VITE_MQTT_URL}:${import.meta.env.VITE_MQTT_WEBSOCKET_PORT}/mqtt`;
 }
