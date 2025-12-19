@@ -1,13 +1,32 @@
 import { Package, AlertTriangle, ShoppingCart } from "lucide-react";
+import { useEffect } from "react";
 import StatCard from "./StatCard";
 import StockLineChart from "./StockLineChart";
 import GaugeChart from "./GaugeChart";
 import QuickStats from "./QuickStats";
 import ProductsTable from "./ProductsTable";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
+import mqttIntegration from "@/services/mqtt.integration";
 
 const Dashboard = () => {
   const { data: stats, isLoading } = useDashboardStats();
+
+  // Connect MQTT khi Dashboard mount
+  useEffect(() => {
+    const initMQTT = async () => {
+      try {
+        // Khởi tạo và kết nối MQTT
+        await mqttIntegration.initialize();
+      } catch (error) { }
+    };
+
+    initMQTT();
+
+    // Cleanup khi unmount
+    return () => {
+      mqttIntegration.disconnect();
+    };
+  }, []);
 
   const growthPercentage = stats?.growthPercentage || 0;
   const growthText = growthPercentage >= 0

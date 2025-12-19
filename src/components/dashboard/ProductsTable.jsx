@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -133,10 +134,18 @@ const ProductsTable = () => {
 
       if (error) {
         console.error('Supabase update error:', error);
+        toast.error('Update Failed', {
+          description: 'Could not update product details',
+          duration: 4000
+        });
         throw error;
       }
 
       console.log('Update successful:', data);
+      toast.success('Product Updated', {
+        description: `${editName} has been updated successfully`,
+        duration: 3000
+      });
       refetch();
       setEditDialogOpen(false);
       setEditingProduct(null);
@@ -147,14 +156,23 @@ const ProductsTable = () => {
 
   const handleDelete = async () => {
     try {
+      const productName = editingProduct.name;
       const { data, error } = await productService.remove(editingProduct.id);
 
       if (error) {
         console.error('Supabase delete error:', error);
+        toast.error('Delete Failed', {
+          description: 'Could not delete product',
+          duration: 4000
+        });
         throw error;
       }
 
       console.log('Delete successful:', data);
+      toast.success('Product Deleted', {
+        description: `${productName} has been permanently deleted`,
+        duration: 3000
+      });
       refetch();
       setEditDialogOpen(false);
       setEditingProduct(null);
@@ -198,10 +216,18 @@ const ProductsTable = () => {
 
       if (error) {
         console.error('Supabase update error:', error);
+        toast.error('Add Stock Failed', {
+          description: 'Could not add stock to product',
+          duration: 4000
+        });
         throw error;
       }
 
       console.log('Update successful:', data);
+      toast.success('Stock Added', {
+        description: `Added ${quantityToAdd} units to ${addingProduct.name}`,
+        duration: 3000
+      });
       refetch();
       setAddStockDialogOpen(false);
       setAddingProduct(null);
@@ -229,10 +255,18 @@ const ProductsTable = () => {
 
       if (error) {
         console.error('Supabase create error:', error);
+        toast.error('Create Failed', {
+          description: 'Could not create new product',
+          duration: 4000
+        });
         throw error;
       }
 
       console.log('Create successful:', data);
+      toast.success('Product Created', {
+        description: `${newName} has been added to inventory`,
+        duration: 3000
+      });
       refetch();
       setCreateDialogOpen(false);
     } catch (error) {

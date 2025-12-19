@@ -16,6 +16,14 @@ export const productService = {
             .single();
     },
 
+    fetchByRfid(rfidUid) {
+        return supabase
+            .from('products')
+            .select('*')
+            .eq('rfid_uid', rfidUid)
+            .single();
+    },
+
     create(product) {
         return supabase
             .from('products')
@@ -72,14 +80,28 @@ export const productService = {
             .select('today_total, growth_percentage')
             .eq('sale_day', today)
             .single();
+    },
+
+    logSale(productId, quantitySold) {
+        return supabase
+            .from('sales_logs')
+            .insert([{
+                product_id: productId,
+                quantity_sold: quantitySold,
+                sold_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
     }
 };
 
 export const fetchAll = productService.fetchAll;
 export const fetchById = productService.fetchById;
+export const fetchByRfid = productService.fetchByRfid;
 export const create = productService.create;
 export const update = productService.update;
 export const remove = productService.remove;
 export const fetchProductChartData = productService.fetchProductChartData;
 export const subscribeToSales = productService.subscribeToSales;
 export const fetchSalesToday = productService.fetchSalesToday;
+export const logSale = productService.logSale;

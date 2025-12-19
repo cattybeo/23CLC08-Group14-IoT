@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index.jsx";
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
